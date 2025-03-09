@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  mt5app:
+    image: gmag11/metatrader5_vnc
+    container_name: mt5app
+    environment:
+      - CUSTOM_USER=cool
+      - PASSWORD=cool
+    volumes:
+      - ./config:/config
+    ports:
+      - 3002:3000
+      - 8080:8001
+    restart: unless-stopped
+    networks:
+      - mt5-network
+    
+
+  mt5python:
+    build:
+      context: ./mt5-python
+      dockerfile: Dockerfile
+    container_name: mt5python
+    links:
+      - "mt5app:mt5app"
+    networks:
+      - mt5-network
+    restart: unless-stopped
+
+networks:
+  mt5-network:
+    driver: bridge
