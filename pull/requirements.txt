@@ -1,0 +1,9 @@
+SQLAlchemy==2.0.37
+psycopg2-binary
+pytz==2024.2
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+setuptools==75.8.0
+six==1.16.0
+fastapi[standard]
+uvicorn

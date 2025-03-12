@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mt5app:
+    image: gmag11/metatrader5_vnc
+    container_name: mt5app
+    environment:
+      - CUSTOM_USER=bigdata # VNC
+      - PASSWORD=bigdata # VNC
+    volumes:
+      - ./config:/config
+    ports:
+      - 3002:3000 # VNC access
+      - 8080:8001 # Remote Python Access
+    restart: unless-stopped
+    networks:
+      - mt5-network
+  mt5pull:
+    build:
+      context: ./pull
+      dockerfile: Dockerfile
+    container_name: mt5pull
+    environment:
+      - MT5_HOST=mt5app
+      - MT5_PORT=8001
+      - DB_LOCAL_URL=postgresql+psycopg2://admin:1234@188.172.228.17:5432/dapp_local_data
+    links:
+      - "mt5app:mt5app"
+    # volumes:
+      # - ./pull/resources:/app/resources/
+    networks:
+      - mt5-network
+    restart: unless-stopped
+    
+  
+
+networks:
+  mt5-network:
+    driver: bridge

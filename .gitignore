@@ -1,1 +1,3 @@
 config/*
+pull/resources/
+.env
