@@ -1,3 +1,5 @@
-config/*
+config/
 pull/resources/
 .env
+package-share/
+__pycache__/

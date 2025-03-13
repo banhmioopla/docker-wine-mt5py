@@ -24,6 +24,8 @@ services:
       - MT5_HOST=mt5app
       - MT5_PORT=8001
       - DB_LOCAL_URL=postgresql+psycopg2://admin:1234@188.172.228.17:5432/dapp_local_data
+    ports:
+      - 4000:4000
     links:
       - "mt5app:mt5app"
     # volumes:
@@ -31,8 +33,6 @@ services:
     networks:
       - mt5-network
     restart: unless-stopped
-    
-  
 
 networks:
   mt5-network:

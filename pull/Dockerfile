@@ -11,9 +11,11 @@ WORKDIR /app
 COPY . .
 # Install mt5linux and other dependencies
 RUN pip install --upgrade pip
+# RUN pip install -r requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install mt5linux
 RUN pip install pandas
 
-
 CMD ["tail", "-f", "/dev/null"]
+# CMD ["uvicorn", "api.app:app", "--host 0.0.0.0", "--port", "4000", "--reload"]
+# uvicorn api.app:app --host 0.0.0.0 --port 4000 --reload

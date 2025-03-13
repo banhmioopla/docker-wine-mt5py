@@ -5,8 +5,8 @@ services:
     image: gmag11/metatrader5_vnc
     container_name: mt5app
     environment:
-      - CUSTOM_USER=cool
-      - PASSWORD=cool
+      - CUSTOM_USER=bigdata
+      - PASSWORD=bigdata
     volumes:
       - ./config:/config
     ports:

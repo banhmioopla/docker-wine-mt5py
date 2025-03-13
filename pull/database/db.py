@@ -52,7 +52,7 @@ class HistoryDeals(Base):
         return {column.key: getattr(self, column.key) for column in class_mapper(self.__class__).columns}
 
 class HistoryDealsTest(Base):
-    __tablename__ = "history_deals_0310"
+    __tablename__ = "history_deals_test_x"
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp = Column(Numeric(precision=20), nullable=True) 
     timestamp_iso = Column(Text, nullable=True)

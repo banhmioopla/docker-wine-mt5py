@@ -78,12 +78,9 @@ def sync_latest_deals(mt5, mt5_data):
     _win_count_to_deal = 0
     _count_to_deal = 0
     
-
     latest_deal = session.query(model).filter(
             model.account_id == str(mt5_data['account']['login']),
         ).order_by(desc(model.timestamp)).first()
-    
-    
     
     if(latest_deal != None):
         _latest_timestamp = latest_deal.timestamp
@@ -132,21 +129,17 @@ def sync_latest_deals(mt5, mt5_data):
                 session.add(record)
                 session.commit()
     # end For loop
-    
 
     # update realtime mt5 data to latest deal
     latest_deal = session.query(model).filter(
-            model.account_id == str(mt5_data['account']['login']),
-        ).order_by(desc(model.timestamp)).first()
+        model.account_id == str(mt5_data['account']['login']),
+    ).order_by(desc(model.timestamp)).first()
     
     latest_deal.account_balance = mt5_data['account']['balance']
     latest_deal.account_equity  = mt5_data['account']['equity']
     session.commit()
     pass
 
-
-def save_history_deal():
-    pass
 
 def get_mt5_accounts():
 
@@ -161,19 +154,5 @@ def get_mt5_accounts():
     ]
     return convert_to_objects
 
-
 def timestamp_to_date(unix_time):
         return datetime.fromtimestamp(unix_time, tz=timezone.utc).date()
-    
-
-def main():
-    mt5_accounts = get_mt5_accounts()
-    mt5 = MetaTrader5(MT5_HOST,MT5_PORT)
-    mt5.initialize()
-    pull_data = pull_data_accounts(mt5, mt5_accounts) # [accounts data]
-
-    for mt5_data in pull_data:
-        sync_latest_deals(mt5, mt5_data)
-
-if __name__ == "__main__":
-    main()

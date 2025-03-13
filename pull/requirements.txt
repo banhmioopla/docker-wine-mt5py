@@ -6,4 +6,5 @@ python-dotenv==1.0.1
 setuptools==75.8.0
 six==1.16.0
 fastapi[standard]
+click
 uvicorn
