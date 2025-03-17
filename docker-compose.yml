@@ -1,29 +1,70 @@
 version: '3.8'
 
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik_mt5
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=admin_mt5@chillinthehill.me"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - mt5-network
+
   mt5app:
     image: gmag11/metatrader5_vnc
     container_name: mt5app
     environment:
       - CUSTOM_USER=bigdata
       - PASSWORD=bigdata
+      - DISPLAY=:1
+      - VNC_DISPLAY=1
+      - VNC_RESOLUTION=1280x720
+      - VNC_DEPTH=24
     volumes:
       - ./config:/config
     ports:
-      - 3002:3000
-      - 8080:8001
+      - "3002:3000"  # Giữ để truy cập trực tiếp trong lúc debug
+      - "8080:8001"  # Remote Python Access
     restart: unless-stopped
     networks:
       - mt5-network
-    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mt5app.rule=Host(`mt5app.chillinthehill.me`)"
+      - "traefik.http.routers.mt5app.entrypoints=websecure"
+      - "traefik.http.routers.mt5app.tls.certresolver=myresolver"
+      - "traefik.http.services.mt5app.loadbalancer.server.port=3000"
 
-  mt5python:
+  mt5pull:
     build:
-      context: ./mt5-python
+      context: ./pull
       dockerfile: Dockerfile
-    container_name: mt5python
+    container_name: mt5pull
+    environment:
+      - MT5_HOST=mt5app
+      - MT5_PORT=8001
+      - DB_LOCAL_URL=postgresql+psycopg2://admin:1234@188.172.228.17:5432/dapp_local_data
+    ports:
+      - "4000:4000"
     links:
       - "mt5app:mt5app"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mt5pull.rule=Host(`mt5api.chillinthehill.me`)"
+      - "traefik.http.routers.mt5pull.entrypoints=websecure"
+      - "traefik.http.routers.mt5pull.tls.certresolver=myresolver"
+      - "traefik.http.services.mt5pull.loadbalancer.server.port=4000"
     networks:
       - mt5-network
     restart: unless-stopped
