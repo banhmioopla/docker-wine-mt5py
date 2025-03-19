@@ -26,6 +26,8 @@ services:
       - DB_LOCAL_URL=postgresql+psycopg2://admin:1234@188.172.228.17:5432/dapp_local_data
     ports:
       - 4000:4000
+    volumes:
+      - ./pull:/app
     links:
       - "mt5app:mt5app"
     # volumes:

@@ -67,6 +67,8 @@ services:
       - "traefik.http.services.mt5pull.loadbalancer.server.port=4000"
     networks:
       - mt5-network
+    volumes:
+      - ./pull:/app
     restart: unless-stopped
 
 networks:

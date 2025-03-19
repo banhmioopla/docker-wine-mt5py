@@ -3,8 +3,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from services import get_current_equity, get_current_balance, get_current_mean_win_rate, build_OHLC, build_timestamp
-from services import pull_mt5
+from services import get_current_equity, get_current_balance, get_current_mean_win_rate, build_OHLC, build_timestamp, pull_mt5
 from datetime import datetime
 import subprocess
 import json
@@ -21,21 +20,12 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Wealth Farming"}
+    return {"message": "Welcome to Wealth Farming Hello"}
 
 
 @app.get("/cron/pull-mt5")
 async def cron_pull_mt5():
-    cmd = ["python", "services/pull_mt5.py"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    data = json.loads(result.stdout)
-
-
-    return {
-        "status": True,
-        "msg" : "pull mt5 ... fine!",
-        "review": data
-    }
+    return pull_mt5()
 
 @app.get("/dapp/equity")
 async def dapp_equity(timestamp = datetime.now().timestamp()):
