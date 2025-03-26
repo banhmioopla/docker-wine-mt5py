@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from database import engine, HistoryDeals, BrokerAccounts, HistoryDealsTest
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, desc, func
 from decimal import Decimal, ROUND_HALF_UP
 
 RESOURCES_DIR = Path(__file__).resolve().parent.parent / 'resources'
@@ -25,8 +25,9 @@ def pull_data_accounts(mt5, mt5_accounts):
     
     data = []
     for login in mt5_accounts:
-        ok = mt5.login(login["account_id"], login["password"], login["server"])
-        if(ok == None): continue
+        # ok = mt5.login(login["account_id"], login["password"], login["server"])
+        if not mt5.initialize(login=int(login["account_id"]), server=login["server"],password=login["password"]): continue
+        # if(ok == None): continue
         history_orders_dict = []
         history_deals_dict  = []
 
@@ -70,7 +71,7 @@ def sync_latest_deals(mt5, mt5_data):
     session = Session()
 
     history_deals = mt5_data['history_deals']
-    model = HistoryDealsTest
+    model = HistoryDeals
     
     _balance_to_deal = 0
     _latest_timestamp = 0
@@ -154,5 +155,203 @@ def get_mt5_accounts():
     ]
     return convert_to_objects
 
+def check_login(mt5, mt5_accounts):
+    data = []
+    for login in mt5_accounts:
+        # ok = mt5.login(login["account_id"], login["password"], login["server"])
+        
+        if not mt5.initialize(login=int(login["account_id"]), server=login["server"],password=login["password"]):
+            data.append(mt5.last_error())
+        data.append(mt5.account_info()._asdict())
+
+    mt5.shutdown()
+    return data
 def timestamp_to_date(unix_time):
         return datetime.fromtimestamp(unix_time, tz=timezone.utc).date()
+
+
+def get_latest_equity():
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    try:
+        # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
+        latest_timestamp_subquery = (
+            session.query(
+                HistoryDeals.account_id,
+                func.max(HistoryDeals.timestamp).label("max_timestamp")
+            )
+            .group_by(HistoryDeals.account_id)
+            .subquery()
+        )
+        
+        # Lấy ID lớn nhất (bản ghi mới nhất) cho mỗi account_id với timestamp mới nhất
+        latest_id_subquery = (
+            session.query(
+                HistoryDeals.account_id,
+                func.max(HistoryDeals.id).label("max_id")
+            )
+            .join(
+                latest_timestamp_subquery,
+                (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
+                (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
+            )
+            .group_by(HistoryDeals.account_id)
+            .subquery()
+        )
+        
+        # Join với bảng chính dựa trên ID để đảm bảo chỉ lấy bản ghi mới nhất
+        latest_records = (
+            session.query(
+                HistoryDeals.account_id,
+                HistoryDeals.account_equity,
+                HistoryDeals.timestamp,
+                HistoryDeals.timestamp_iso
+            )
+            .join(
+                latest_id_subquery,
+                (HistoryDeals.account_id == latest_id_subquery.c.account_id) &
+                (HistoryDeals.id == latest_id_subquery.c.max_id)
+            )
+            .all()
+        )
+        
+        # Tính tổng
+        total_equity = sum(record.account_equity for record in latest_records)
+        
+        return {
+            "accounts": [
+                {
+                    "account_id": record.account_id,
+                    "account_equity": float(record.account_equity),
+                    "timestamp": float(record.timestamp),
+                    "timestamp_iso": record.timestamp_iso
+                } for record in latest_records
+            ],
+            "total_equity": float(total_equity)
+        }
+    finally:
+        session.close()
+
+def get_latest_equity_sum():
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
+    latest_timestamp_subquery = (
+        session.query(
+            HistoryDeals.account_id,
+            func.max(HistoryDeals.timestamp).label("max_timestamp")
+        )
+        .group_by(HistoryDeals.account_id)
+        .subquery()
+    )
+    
+    # Join với bảng chính để lấy các bản ghi với timestamp mới nhất
+    latest_equity_records = (
+        session.query(HistoryDeals)
+        .join(
+            latest_timestamp_subquery,
+            (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
+            (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
+        )
+    )
+    
+    # Tính tổng account_equity từ các bản ghi mới nhất
+    total_equity = session.query(func.sum(HistoryDeals.account_equity)).filter(
+        HistoryDeals.id.in_([record.id for record in latest_equity_records])
+    ).scalar() or 0
+    
+    return total_equity
+
+def get_latest_balance_sum():
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
+    latest_timestamp_subquery = (
+        session.query(
+            HistoryDeals.account_id,
+            func.max(HistoryDeals.timestamp).label("max_timestamp")
+        )
+        .group_by(HistoryDeals.account_id)
+        .subquery()
+    )
+    
+    # Join với bảng chính để lấy các bản ghi với timestamp mới nhất
+    latest_balance_records = (
+        session.query(HistoryDeals)
+        .join(
+            latest_timestamp_subquery,
+            (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
+            (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
+        )
+    )
+    
+    # Tính tổng account_balance từ các bản ghi mới nhất
+    total_balance = session.query(func.sum(HistoryDeals.account_balance)).filter(
+        HistoryDeals.id.in_([record.id for record in latest_balance_records])
+    ).scalar() or 0
+    
+    return total_balance
+
+def get_latest_balance():
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    try:
+        # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
+        latest_timestamp_subquery = (
+            session.query(
+                HistoryDeals.account_id,
+                func.max(HistoryDeals.timestamp).label("max_timestamp")
+            )
+            .group_by(HistoryDeals.account_id)
+            .subquery()
+        )
+        
+        # Lấy ID lớn nhất (bản ghi mới nhất) cho mỗi account_id với timestamp mới nhất
+        latest_id_subquery = (
+            session.query(
+                HistoryDeals.account_id,
+                func.max(HistoryDeals.id).label("max_id")
+            )
+            .join(
+                latest_timestamp_subquery,
+                (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
+                (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
+            )
+            .group_by(HistoryDeals.account_id)
+            .subquery()
+        )
+        
+        # Join với bảng chính dựa trên ID để đảm bảo chỉ lấy bản ghi mới nhất
+        latest_records = (
+            session.query(
+                HistoryDeals.account_id,
+                HistoryDeals.account_balance,
+                HistoryDeals.timestamp,
+                HistoryDeals.timestamp_iso
+            )
+            .join(
+                latest_id_subquery,
+                (HistoryDeals.account_id == latest_id_subquery.c.account_id) &
+                (HistoryDeals.id == latest_id_subquery.c.max_id)
+            )
+            .all()
+        )
+        
+        # Tính tổng
+        total_balance = sum(record.account_balance for record in latest_records)
+        
+        return {
+            "accounts": [
+                {
+                    "account_id": record.account_id,
+                    "account_balance": float(record.account_balance),
+                    "timestamp": float(record.timestamp),
+                    "timestamp_iso": record.timestamp_iso
+                } for record in latest_records
+            ],
+            "total_balance": float(total_balance)
+        }
+    finally:
+        session.close()

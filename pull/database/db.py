@@ -32,7 +32,7 @@ class BrokerAccounts(Base):
         return {column.key: getattr(self, column.key) for column in class_mapper(self.__class__).columns}
     
 class HistoryDeals(Base):
-    __tablename__ = "history_deals"
+    __tablename__ = "history_deals_prod_20250324"
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp = Column(Numeric(precision=20), nullable=True) 
     timestamp_iso = Column(Text, nullable=True)
@@ -52,7 +52,7 @@ class HistoryDeals(Base):
         return {column.key: getattr(self, column.key) for column in class_mapper(self.__class__).columns}
 
 class HistoryDealsTest(Base):
-    __tablename__ = "history_deals_test_x"
+    __tablename__ = "history_deals_test_518"
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp = Column(Numeric(precision=20), nullable=True) 
     timestamp_iso = Column(Text, nullable=True)
