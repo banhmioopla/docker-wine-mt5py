@@ -4,8 +4,10 @@ from .mt5 import (pull_mt5, pull_and_sync_mt5,
                   get_accounts, 
                   run_check_login, 
                   get_latest_equity_details, get_latest_equity_sum,
-                  get_latest_balance_details, get_latest_balance_sum
+                  get_latest_balance_details, get_latest_balance_sum,
+                  get_latest_balance_by_fee
                   )
+
 
 __all__ = [
     'get_current_balance',
@@ -21,4 +23,5 @@ __all__ = [
     'get_latest_equity_sum',
     'get_latest_balance_details',
     'get_latest_balance_sum',
+    'get_latest_balance_by_fee',
 ]

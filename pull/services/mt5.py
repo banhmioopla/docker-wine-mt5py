@@ -6,10 +6,14 @@ from lib.mt5 import (get_mt5_accounts, pull_data_accounts,
                      get_latest_equity, 
                      get_latest_equity_sum as equity_sum,
                      get_latest_balance, 
-                     get_latest_balance_sum as balance_sum
+                     get_latest_balance_by_fee as balance_by_fee,
+                     get_latest_balance_sum as balance_sum,
+                     day_counts
                      )
 from mt5linux import MetaTrader5
+import lib.constants as constants
 import json
+fee_management = 0.05
 
 def pull_mt5():
     
@@ -49,6 +53,18 @@ def get_latest_equity_sum():
 
 def get_latest_balance_details():
     return get_latest_balance()
+
+def get_latest_balance_by_fee(date):
+    return {
+        'balance_by_fee': balance_by_fee(date),
+        'balance_original' : get_latest_balance(),
+        'query': {
+            'fee_management': constants.FEE_MANAGEMENT,
+            'day_counts':  day_counts(constants.DATE_INIT, date),
+            'fund_start_at': constants.DATE_INIT,
+            'date': date
+        }
+    }
 
 def get_latest_balance_sum():
     return balance_sum()

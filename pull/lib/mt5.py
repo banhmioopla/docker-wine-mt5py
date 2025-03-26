@@ -12,10 +12,13 @@ from database import engine, HistoryDeals, BrokerAccounts, HistoryDealsTest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import and_, desc, func
 from decimal import Decimal, ROUND_HALF_UP
+import lib.constants as constants
 
 RESOURCES_DIR = Path(__file__).resolve().parent.parent / 'resources'
 MT5_HOST = os.getenv('MT5_HOST')
 MT5_PORT = os.getenv('MT5_PORT')
+DATE_INIT = '2025-03-24'
+FEE_MANAGEMENT = 0.05
 
 def pull_data_accounts(mt5, mt5_accounts):
 
@@ -355,3 +358,80 @@ def get_latest_balance():
         }
     finally:
         session.close()
+
+
+def get_latest_balance_by_fee(by_date):
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    try:
+        # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
+        latest_timestamp_subquery = (
+            session.query(
+                HistoryDeals.account_id,
+                func.max(HistoryDeals.timestamp).label("max_timestamp")
+            )
+            .group_by(HistoryDeals.account_id)
+            .subquery()
+        )
+        
+        # Lấy ID lớn nhất (bản ghi mới nhất) cho mỗi account_id với timestamp mới nhất
+        latest_id_subquery = (
+            session.query(
+                HistoryDeals.account_id,
+                func.max(HistoryDeals.id).label("max_id")
+            )
+            .join(
+                latest_timestamp_subquery,
+                (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
+                (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
+            )
+            .group_by(HistoryDeals.account_id)
+            .subquery()
+        )
+        
+        # Join với bảng chính dựa trên ID để đảm bảo chỉ lấy bản ghi mới nhất
+        latest_records = (
+            session.query(
+                HistoryDeals.account_id,
+                HistoryDeals.account_balance,
+                HistoryDeals.timestamp,
+                HistoryDeals.timestamp_iso
+            )
+            .join(
+                latest_id_subquery,
+                (HistoryDeals.account_id == latest_id_subquery.c.account_id) &
+                (HistoryDeals.id == latest_id_subquery.c.max_id)
+            )
+            .all()
+        )
+        
+        # Tính tổng
+        total_balance = sum(record.account_balance for record in latest_records)
+        total_balance_after_fee = cal_balance_after_fee(total_balance, by_date)
+
+        return {
+            "accounts": [
+                {
+                    "account_id": record.account_id,
+                    "account_balance": cal_balance_after_fee(float(record.account_balance), by_date) ,
+                    "timestamp": float(record.timestamp),
+                    "timestamp_iso": record.timestamp_iso
+                } for record in latest_records
+            ],
+            "total_balance": float(total_balance_after_fee)
+        }
+    finally:
+        session.close()
+
+
+def cal_balance_after_fee(balance, date):
+    counts = day_counts(constants.DATE_INIT, date)
+    return float(balance) * ((1 - constants.FEE_MANAGEMENT) ** counts)
+
+def day_counts(start, end):
+
+    start_date = datetime.strptime(start, '%Y-%m-%d')
+    end_date = datetime.strptime(end, '%Y-%m-%d')
+    delta = (end_date - start_date).days + 1
+    return delta
