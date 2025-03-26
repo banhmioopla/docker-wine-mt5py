@@ -3,3 +3,5 @@ pull/resources/
 .env
 package-share/
 __pycache__/
+certs/
+docker-compose.https.yml

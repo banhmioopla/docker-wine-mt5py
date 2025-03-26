@@ -17,8 +17,18 @@ import json
 import lib.backend as be
 import lib.constants as constants
 
+root_path = os.getenv("ROOT_PATH", "")
+app = FastAPI(
+    title="MT5 Pull API",
+    description="API for MT5 data pulling",
+    version="1.0.0",
+    root_path=root_path,  # Quan trọng: Sử dụng root_path
+    # Quan trọng: Đặt URL rõ ràng cho OpenAPI schema
+    openapi_url="/openapi.json", 
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
-app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
