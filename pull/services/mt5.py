@@ -2,6 +2,7 @@ import sys,os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from lib.mt5 import (get_mt5_accounts, pull_data_accounts, 
+                     get_test_mt5_accounts,
                      sync_latest_deals, check_login, 
                      get_latest_equity, 
                      get_latest_equity_sum as equity_sum,
@@ -44,6 +45,9 @@ def pull_and_sync_mt5():
 
 def get_accounts():
     return get_mt5_accounts()
+
+def get_test_accounts():
+    return get_test_mt5_accounts()
 
 def get_latest_equity_details():
     return get_latest_equity()

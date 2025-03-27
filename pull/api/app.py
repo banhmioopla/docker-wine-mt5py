@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from services import (get_current_equity, get_current_balance, 
                       get_current_mean_win_rate, build_OHLC, build_timestamp, 
                       pull_mt5, pull_and_sync_mt5, 
-                      get_accounts, run_check_login, 
+                      get_accounts, run_check_login, get_test_accounts,
                       get_latest_equity_details, get_latest_equity_sum,
                       get_latest_balance_details, get_latest_balance_sum,
                       get_latest_balance_by_fee
@@ -105,6 +105,12 @@ async def dapp_balance_latest_sum():
 @app.get("/mt5/accounts")
 async def mt5_accounts():
     return [acc["account_id"] for acc in get_accounts()]
+
+@app.get("/test/mt5/accounts")
+async def test_mt5_accounts():
+    return [acc["account_id"] for acc in get_test_accounts()]
+
+
 
 @app.get("/backend/day-counts")
 async def backend_day_counts(start = "2025-03-24", end = "2025-03-26"):
