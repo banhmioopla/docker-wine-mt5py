@@ -7,6 +7,7 @@ from .mt5 import (pull_mt5, pull_and_sync_mt5,
                   get_latest_balance_details, get_latest_balance_sum,
                   get_latest_balance_by_fee
                   )
+from .timeseries_chart import (get_hourly_balance_chart, get_hourly_balance_by_fee_chart)
 
 
 __all__ = [
@@ -25,4 +26,6 @@ __all__ = [
     'get_latest_balance_details',
     'get_latest_balance_sum',
     'get_latest_balance_by_fee',
+    'get_hourly_balance_chart',
+    'get_hourly_balance_by_fee_chart',
 ]

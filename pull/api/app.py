@@ -9,7 +9,9 @@ from services import (get_current_equity, get_current_balance,
                       get_accounts, run_check_login, get_test_accounts,
                       get_latest_equity_details, get_latest_equity_sum,
                       get_latest_balance_details, get_latest_balance_sum,
-                      get_latest_balance_by_fee
+                      get_latest_balance_by_fee,
+                      get_hourly_balance_chart,
+                      get_hourly_balance_by_fee_chart
                       )
 from datetime import datetime
 import subprocess
@@ -91,8 +93,15 @@ async def dapp_equity_latest_details():
 
 @app.get("/dapp/equity-latest/sum")
 async def dapp_equity_latest_sum():
-    return get_latest_equity_sum()
+    return {
+        'result': get_latest_equity_sum()
+    }
 
+@app.get("/dapp/equity-latest/sum-fix")
+async def dapp_equity_latest_sum_fix():
+    return {
+        'result': get_latest_equity_sum()
+    }
 
 @app.get("/dapp/balance-latest/details")
 async def dapp_balance_latest_details():
@@ -100,7 +109,9 @@ async def dapp_balance_latest_details():
 
 @app.get("/dapp/balance-latest/sum")
 async def dapp_balance_latest_sum():
-    return get_latest_balance_sum()
+    return {
+        'result': get_latest_balance_sum()
+    }
 
 @app.get("/mt5/accounts")
 async def mt5_accounts():
@@ -111,6 +122,13 @@ async def test_mt5_accounts():
     return [acc["account_id"] for acc in get_test_accounts()]
 
 
+@app.get("/dapp/timeseries/balance")
+async def dapp_timeseries_balance():
+    return get_hourly_balance_chart()
+
+@app.get("/dapp/timeseries/balance-by-fee")
+async def dapp_timeseries_balance_by_fee():
+    return get_hourly_balance_by_fee_chart()
 
 @app.get("/backend/day-counts")
 async def backend_day_counts(start = "2025-03-24", end = "2025-03-26"):

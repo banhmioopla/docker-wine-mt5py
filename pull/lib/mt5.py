@@ -250,64 +250,10 @@ def get_latest_equity():
         session.close()
 
 def get_latest_equity_sum():
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
-    latest_timestamp_subquery = (
-        session.query(
-            HistoryDeals.account_id,
-            func.max(HistoryDeals.timestamp).label("max_timestamp")
-        )
-        .group_by(HistoryDeals.account_id)
-        .subquery()
-    )
-    
-    # Join với bảng chính để lấy các bản ghi với timestamp mới nhất
-    latest_equity_records = (
-        session.query(HistoryDeals)
-        .join(
-            latest_timestamp_subquery,
-            (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
-            (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
-        )
-    )
-    
-    # Tính tổng account_equity từ các bản ghi mới nhất
-    total_equity = session.query(func.sum(HistoryDeals.account_equity)).filter(
-        HistoryDeals.id.in_([record.id for record in latest_equity_records])
-    ).scalar() or 0
-    
-    return total_equity
+    return get_latest_equity()["total_equity"]
 
 def get_latest_balance_sum():
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    # Truy vấn con để lấy timestamp mới nhất cho mỗi account_id
-    latest_timestamp_subquery = (
-        session.query(
-            HistoryDeals.account_id,
-            func.max(HistoryDeals.timestamp).label("max_timestamp")
-        )
-        .group_by(HistoryDeals.account_id)
-        .subquery()
-    )
-    
-    # Join với bảng chính để lấy các bản ghi với timestamp mới nhất
-    latest_balance_records = (
-        session.query(HistoryDeals)
-        .join(
-            latest_timestamp_subquery,
-            (HistoryDeals.account_id == latest_timestamp_subquery.c.account_id) &
-            (HistoryDeals.timestamp == latest_timestamp_subquery.c.max_timestamp)
-        )
-    )
-    
-    # Tính tổng account_balance từ các bản ghi mới nhất
-    total_balance = session.query(func.sum(HistoryDeals.account_balance)).filter(
-        HistoryDeals.id.in_([record.id for record in latest_balance_records])
-    ).scalar() or 0
-    
-    return total_balance
+    return get_latest_balance()["total_balance"]
 
 def get_latest_balance():
     Session = sessionmaker(bind=engine)
